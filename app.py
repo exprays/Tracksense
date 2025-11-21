@@ -17,6 +17,8 @@ from src.data.visualizer import RaceVisualizer
 from src.models.tire_model import TireDegradationModel
 from src.models.pit_optimizer import PitStopOptimizer
 from src.models.fuel_model import FuelCalculator
+from src.models.model_trainer import ModelTrainer
+from src.models.ai_insights import RaceInsightsGenerator
 from src.utils.constants import TRACKS, DASHBOARD
 
 # Page configuration
@@ -67,8 +69,17 @@ def load_models():
     pit_optimizer = PitStopOptimizer()
     fuel_calculator = FuelCalculator()
     visualizer = RaceVisualizer()
+    insights_generator = RaceInsightsGenerator()
     
-    return tire_model, pit_optimizer, fuel_calculator, visualizer
+    # Try to load trained models
+    models_path = Path(__file__).parent / 'models'
+    if (models_path / 'tire_degradation_model.pkl').exists():
+        try:
+            tire_model.load(str(models_path / 'tire_degradation_model.pkl'))
+        except Exception as e:
+            st.warning(f"Could not load trained tire model: {e}")
+    
+    return tire_model, pit_optimizer, fuel_calculator, visualizer, insights_generator
 
 
 @st.cache_resource
@@ -86,7 +97,7 @@ def main():
     # Initialize components
     loader = load_data_loader()
     preprocessor = RaceDataPreprocessor()
-    tire_model, pit_optimizer, fuel_calculator, visualizer = load_models()
+    tire_model, pit_optimizer, fuel_calculator, visualizer, insights_generator = load_models()
     
     # Sidebar - Race Selection
     st.sidebar.title("Race Selection")
@@ -188,12 +199,14 @@ def main():
                    unsafe_allow_html=True)
     
     # Tab layout
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
         "📊 Overview", 
         "🔧 Pit Strategy", 
         "⏱️ Performance", 
         "⛽ Fuel Management",
-        "🌡️ Conditions"
+        "🌡️ Conditions",
+        "🤖 AI Insights",
+        "🎓 Model Training"
     ])
     
     with tab1:
@@ -373,6 +386,398 @@ def main():
                 col4.metric("Rain", rain_status)
         else:
             st.info("Weather data not available for this session")
+    
+    with tab6:
+        st.subheader("🤖 AI-Powered Race Insights")
+        
+        # Get tire predictions
+        tire_predictions = tire_model.predict_next_laps(current_data, n_laps=5)
+        
+        # Generate comprehensive insights
+        insights = insights_generator.generate_comprehensive_insights(
+            current_state=current_state,
+            race_context={'total_laps': max_lap, 'position': None},
+            processed_data=current_data,
+            tire_predictions=tire_predictions,
+            pit_window=pit_recommendation['pit_window'],
+            strategies=pit_recommendation.get('strategies', [])
+        )
+        
+        # Display priority recommendations
+        if insights.get('priority_recommendations'):
+            st.markdown("### 🎯 Priority Actions")
+            urgency_colors = {
+                'critical': '#ff4444',
+                'high': '#ffaa00',
+                'low': '#44ff44'
+            }
+            urgency = insights.get('overall_urgency', 'low')
+            st.markdown(
+                f'<div style="background-color: {urgency_colors[urgency]}; '
+                f'padding: 15px; border-radius: 5px; margin: 10px 0;">'
+                f'<b>Overall Urgency: {urgency.upper()}</b></div>',
+                unsafe_allow_html=True
+            )
+            
+            for i, rec in enumerate(insights['priority_recommendations'][:5], 1):
+                st.markdown(f"**{i}.** {rec}")
+        
+        st.markdown("---")
+        
+        # Display insights by category
+        for section in insights.get('sections', []):
+            with st.expander(f"{section['category']} (Confidence: {section.get('confidence', 0)*100:.0f}%)", expanded=True):
+                st.markdown("**Analysis:**")
+                for insight in section.get('insights', []):
+                    st.markdown(f"• {insight}")
+                
+                if section.get('recommendations'):
+                    st.markdown("\n**Recommendations:**")
+                    for rec in section['recommendations']:
+                        st.markdown(f"→ {rec}")
+                
+                # Display metrics if available
+                if section.get('metrics'):
+                    st.markdown("\n**Metrics:**")
+                    cols = st.columns(len(section['metrics']))
+                    for col, (key, value) in zip(cols, section['metrics'].items()):
+                        if isinstance(value, float):
+                            col.metric(key.replace('_', ' ').title(), f"{value:.3f}")
+                        else:
+                            col.metric(key.replace('_', ' ').title(), value)
+                
+                # Display predictions if available
+                if section.get('predictions'):
+                    st.markdown("\n**Predictions:**")
+                    for key, value in section['predictions'].items():
+                        if isinstance(value, (int, float)):
+                            st.metric(key.replace('_', ' ').title(), f"{value:.2f}")
+    
+    with tab7:
+        st.subheader("🎓 Model Training & Performance")
+        
+        st.markdown("""
+        This section allows you to train machine learning models on all available race data 
+        to improve prediction accuracy for tire degradation, pit strategy, and driver performance.
+        """)
+        
+        models_path = Path(__file__).parent / 'models'
+        history_path = models_path / 'training_history.json'
+        
+        # Load training history if available
+        training_history = None
+        if history_path.exists():
+            import json
+            with open(history_path, 'r') as f:
+                training_history = json.load(f)
+        
+        # Check for existing trained models with detailed info
+        st.markdown("### 📊 Current Model Status")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            tire_model_exists = (models_path / 'tire_degradation_model.pkl').exists()
+            st.markdown("**🔵 Tire Degradation Model**")
+            if tire_model_exists:
+                st.success("✓ Trained")
+                st.caption("**Type:** Regression Model")
+                st.caption("**Algorithm:** Gradient Boosting")
+                if training_history and training_history.get('tire_model'):
+                    tire_metrics = training_history['tire_model']['metrics']
+                    st.metric("R² Score", f"{tire_metrics['r2_score']:.3f}", 
+                             help="1.0 = perfect predictions")
+                    st.metric("MAE", f"{tire_metrics['mae']:.4f}",
+                             help="Average prediction error")
+            else:
+                st.warning("⚠️ Not Trained")
+                st.caption("**Type:** Regression Model")
+                st.caption("**Algorithm:** Gradient Boosting")
+                st.info("Train to enable tire life predictions")
+        
+        with col2:
+            pit_model_exists = (models_path / 'pit_strategy_model.pkl').exists()
+            st.markdown("**🟢 Pit Strategy Model**")
+            if pit_model_exists:
+                st.success("✓ Trained")
+                st.caption("**Type:** Classification Model")
+                st.caption("**Algorithm:** XGBoost/RandomForest")
+                if training_history and training_history.get('pit_strategy_model'):
+                    pit_metrics = training_history['pit_strategy_model']
+                    st.metric("Accuracy", f"{pit_metrics['val_accuracy']:.3f}",
+                             help="Validation set accuracy")
+                    st.metric("F1 Score", f"{pit_metrics['f1_score']:.3f}",
+                             help="Precision-recall balance")
+            else:
+                st.warning("⚠️ Not Trained")
+                st.caption("**Type:** Classification Model")
+                st.caption("**Algorithm:** XGBoost/RandomForest")
+                st.info("Train to enable pit timing predictions")
+        
+        with col3:
+            driver_model_exists = (models_path / 'driver_fingerprint_model.pkl').exists()
+            st.markdown("**🟡 Driver Fingerprint Model**")
+            if driver_model_exists:
+                st.success("✓ Trained")
+                st.caption("**Type:** Multi-class Classification")
+                st.caption("**Algorithm:** Random Forest")
+                if training_history and training_history.get('driver_model'):
+                    driver_metrics = training_history['driver_model']
+                    st.metric("CV Accuracy", f"{driver_metrics['cv_accuracy_mean']:.3f}",
+                             help="Cross-validation accuracy")
+                    st.metric("Drivers", driver_metrics['n_drivers'],
+                             help="Unique drivers analyzed")
+            else:
+                st.warning("⚠️ Not Trained")
+                st.caption("**Type:** Multi-class Classification")
+                st.caption("**Algorithm:** Random Forest")
+                st.info("Train to enable driver analysis")
+        
+        st.markdown("---")
+        
+        # Training section
+        st.markdown("### Train Models")
+        
+        st.warning("""
+        ⚠️ **Warning**: Training will use all available race data from both tracks. 
+        This process may take 1-2 minutes to complete.
+        """)
+        
+        if st.button("🚀 Train All Models", type="primary", use_container_width=True):
+            with st.spinner("Training models... This may take a minute."):
+                try:
+                    # Initialize trainer
+                    trainer = ModelTrainer(
+                        data_path=str(Path(__file__).parent / 'dataset'),
+                        models_output_path=str(models_path)
+                    )
+                    
+                    # Train all models
+                    results = trainer.train_all_models()
+                    
+                    st.success("✓ All models trained successfully!")
+                    
+                    # Display results
+                    st.markdown("### Training Results")
+                    
+                    # Tire Model Results
+                    if results.get('tire_model'):
+                        with st.expander("📊 Tire Degradation Model", expanded=True):
+                            tire = results['tire_model']
+                            
+                            st.markdown("**Model Type:** Gradient Boosting Regressor")
+                            st.markdown("**Parameters:** n_estimators=100, learning_rate=0.1, max_depth=4")
+                            st.markdown("**Task:** Predict tire life (0-1 scale) based on lap data, weather, and driving style")
+                            st.markdown("")
+                            
+                            st.markdown("**Performance Metrics:**")
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            col1.metric("R² Score", f"{tire['metrics']['r2_score']:.4f}", 
+                                       help="Coefficient of determination (1.0 = perfect predictions)")
+                            col2.metric("MAE", f"{tire['metrics']['mae']:.4f}",
+                                       help="Mean Absolute Error - average prediction error")
+                            col3.metric("RMSE", f"{tire['metrics']['rmse']:.4f}",
+                                       help="Root Mean Square Error - penalizes large errors")
+                            col4.metric("Total Laps", tire['total_laps'],
+                                       help="Number of training samples")
+                            
+                            if tire.get('feature_importance'):
+                                st.markdown("")
+                                st.markdown("**Top 5 Important Features:**")
+                                top_features = list(tire['feature_importance'].items())[:5]
+                                for i, (feat, importance) in enumerate(top_features, 1):
+                                    st.markdown(f"{i}. **{feat}**: {importance:.4f}")
+                    
+                    # Pit Strategy Model Results
+                    if results.get('pit_strategy_model'):
+                        with st.expander("🔧 Pit Strategy Model", expanded=True):
+                            pit = results['pit_strategy_model']
+                            
+                            st.markdown("**Model Type:** XGBoost Classifier (or RandomForest fallback)")
+                            st.markdown("**Parameters:** n_estimators=100, max_depth=5, learning_rate=0.1")
+                            st.markdown("**Task:** Binary classification - predict whether to pit (Yes/No)")
+                            st.markdown("**Input Features:** Tire life, fuel remaining, degradation rate, consistency, track, weather")
+                            st.markdown("")
+                            
+                            st.markdown("**Classification Metrics:**")
+                            col1, col2, col3, col4, col5 = st.columns(5)
+                            
+                            col1.metric("Train Accuracy", f"{pit['train_accuracy']:.4f}",
+                                       help="Accuracy on training set")
+                            col2.metric("Val Accuracy", f"{pit['val_accuracy']:.4f}",
+                                       help="Accuracy on validation set (unseen data)")
+                            col3.metric("Precision", f"{pit['precision']:.4f}",
+                                       help="When model says 'pit', how often is it correct?")
+                            col4.metric("Recall", f"{pit['recall']:.4f}",
+                                       help="Of all times you should pit, how many does model catch?")
+                            col5.metric("F1 Score", f"{pit['f1_score']:.4f}",
+                                       help="Harmonic mean of precision and recall")
+                            
+                            st.markdown("")
+                            st.markdown(f"**Training Samples:** {pit['n_samples']:,} lap decisions")
+                    
+                    # Driver Model Results
+                    if results.get('driver_model'):
+                        with st.expander("👤 Driver Fingerprint Model", expanded=True):
+                            driver = results['driver_model']
+                            
+                            st.markdown("**Model Type:** Random Forest Classifier")
+                            st.markdown("**Parameters:** n_estimators=100, max_depth=10")
+                            st.markdown("**Task:** Multi-class classification - identify driver by their driving style")
+                            st.markdown("**Features:** Lap time, consistency, aggression, sector strengths, speed characteristics")
+                            st.markdown("")
+                            
+                            st.markdown("**Classification Metrics:**")
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            col1.metric("CV Accuracy", 
+                                      f"{driver['cv_accuracy_mean']:.4f}",
+                                      help="Cross-validation accuracy (mean across folds)")
+                            col2.metric("Std Dev", 
+                                      f"± {driver['cv_accuracy_std']:.4f}",
+                                      help="Standard deviation of CV scores")
+                            col3.metric("Drivers", driver['n_drivers'],
+                                       help="Number of unique drivers analyzed")
+                            col4.metric("Samples", driver['n_samples'],
+                                       help="Number of race sessions used")
+                            
+                            st.markdown("")
+                            st.markdown(f"**Drivers Analyzed:** {', '.join(map(str, driver['drivers'][:10]))}")
+                            
+                            if driver.get('feature_importance'):
+                                st.markdown("")
+                                st.markdown("**Key Driving Style Features:**")
+                                top_features = sorted(driver['feature_importance'].items(), 
+                                                    key=lambda x: x[1], reverse=True)[:5]
+                                for i, (feat, importance) in enumerate(top_features, 1):
+                                    st.markdown(f"{i}. **{feat.replace('_', ' ').title()}**: {importance:.4f}")
+                    
+                    # Generate and display report
+                    st.markdown("### 📄 Training Report")
+                    report = trainer.generate_training_report()
+                    st.code(report, language=None)
+                    
+                    st.info("💡 Reload the page to use the newly trained models in predictions.")
+                    
+                except Exception as e:
+                    st.error(f"Error during training: {str(e)}")
+                    st.exception(e)
+        
+        # Display training history with visualizations if available
+        if training_history:
+            st.markdown("---")
+            st.markdown("### 📜 Training History & Performance Visualization")
+            
+            st.markdown(f"**Last Training:** {training_history.get('timestamp', 'Unknown')}")
+            st.markdown(f"**Races Used:** {len(training_history.get('races_used', []))}")
+            
+            # Create performance comparison visualization
+            import plotly.graph_objects as go
+            
+            # Prepare data for visualization
+            models_data = []
+            colors_map = {'Tire Model': '#636EFA', 'Pit Strategy': '#00CC96', 'Driver Model': '#FFA15A'}
+            
+            if training_history.get('tire_model'):
+                tire = training_history['tire_model']
+                models_data.append({
+                    'name': 'Tire Model',
+                    'type': 'Regression',
+                    'r2': tire['metrics']['r2_score'],
+                    'mae': tire['metrics']['mae'],
+                    'samples': tire['total_laps']
+                })
+            
+            if training_history.get('pit_strategy_model'):
+                pit = training_history['pit_strategy_model']
+                models_data.append({
+                    'name': 'Pit Strategy',
+                    'type': 'Classification',
+                    'accuracy': pit['val_accuracy'],
+                    'f1': pit['f1_score'],
+                    'samples': pit['n_samples']
+                })
+            
+            if training_history.get('driver_model'):
+                driver = training_history['driver_model']
+                models_data.append({
+                    'name': 'Driver Model',
+                    'type': 'Multi-class',
+                    'accuracy': driver['cv_accuracy_mean'],
+                    'samples': driver['n_samples']
+                })
+            
+            if models_data:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Model Performance Comparison
+                    fig1 = go.Figure()
+                    
+                    for model in models_data:
+                        if 'r2' in model:
+                            fig1.add_trace(go.Bar(
+                                name=model['name'],
+                                x=['R² Score'],
+                                y=[model['r2']],
+                                marker_color=colors_map[model['name']],
+                                text=[f"{model['r2']:.3f}"],
+                                textposition='auto',
+                            ))
+                        elif 'accuracy' in model:
+                            fig1.add_trace(go.Bar(
+                                name=model['name'],
+                                x=['Accuracy'],
+                                y=[model['accuracy']],
+                                marker_color=colors_map[model['name']],
+                                text=[f"{model['accuracy']:.3f}"],
+                                textposition='auto',
+                            ))
+                    
+                    fig1.update_layout(
+                        title="Model Performance Scores",
+                        yaxis_title="Score",
+                        yaxis=dict(range=[0, 1.1]),
+                        height=350,
+                        showlegend=True
+                    )
+                    st.plotly_chart(fig1, use_container_width=True)
+                
+                with col2:
+                    # Training Sample Distribution
+                    fig2 = go.Figure(data=[
+                        go.Bar(
+                            x=[m['name'] for m in models_data],
+                            y=[m['samples'] for m in models_data],
+                            marker_color=[colors_map[m['name']] for m in models_data],
+                            text=[f"{m['samples']:,}" for m in models_data],
+                            textposition='auto',
+                        )
+                    ])
+                    
+                    fig2.update_layout(
+                        title="Training Samples per Model",
+                        yaxis_title="Number of Samples",
+                        height=350
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+                
+                # Model Type Summary
+                st.markdown("### 🎯 Model Type Summary")
+                summary_cols = st.columns(3)
+                
+                with summary_cols[0]:
+                    st.info("**Regression Model**\n\n📊 Tire Degradation\n\n• Predicts continuous values (0-1)\n• Gradient Boosting algorithm")
+                
+                with summary_cols[1]:
+                    st.success("**Binary Classification**\n\n🔧 Pit Strategy\n\n• Predicts Yes/No decisions\n• XGBoost/RandomForest")
+                
+                with summary_cols[2]:
+                    st.warning("**Multi-class Classification**\n\n👤 Driver Fingerprint\n\n• Identifies 33+ drivers\n• Random Forest algorithm")
+            
+            if st.checkbox("Show detailed training history JSON"):
+                st.json(training_history)
     
     # Footer
     st.markdown("---")

@@ -16,3 +16,6 @@ tests
 
 #pycache
 __pycache__/
+
+#trained model files
+*.pkl
