@@ -54,12 +54,21 @@ class RaceDataPreprocessor:
         df['TIRE_LIFE_ESTIMATE'] = 1.0 - (df['LAP_NUMBER'] * TIRE_DEGRADATION['base_degradation_rate'])
         df['TIRE_LIFE_ESTIMATE'] = df['TIRE_LIFE_ESTIMATE'].clip(lower=0, upper=1)
         
-        # Degradation rate (seconds per lap)
+        # Degradation rate (seconds per lap) - calculate rolling rate
+        df['DEGRADATION_RATE'] = 0.0
         lap_times = df['LAP_TIME_SECONDS'].dropna().values
         if len(lap_times) > 3:
-            df['DEGRADATION_RATE'] = calculate_degradation_rate(lap_times)
-        else:
-            df['DEGRADATION_RATE'] = 0.0
+            # Use last 5-10 laps to calculate current degradation trend
+            window = min(10, len(lap_times))
+            recent_times = lap_times[-window:]
+            deg_rate = calculate_degradation_rate(recent_times)
+            # Assign to the last row (current lap)
+            df.loc[df.index[-1], 'DEGRADATION_RATE'] = deg_rate
+            # For other laps, calculate rolling degradation
+            for i in range(3, len(df)):
+                window_times = lap_times[max(0, i-window):i+1]
+                if len(window_times) >= 3:
+                    df.loc[df.index[i], 'DEGRADATION_RATE'] = calculate_degradation_rate(window_times)
         
         # Flag critical tire wear
         df['TIRE_WARNING'] = df['TIRE_LIFE_ESTIMATE'] < TIRE_DEGRADATION['wear_threshold']

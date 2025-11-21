@@ -112,15 +112,25 @@ class RaceVisualizer:
                 showlegend=False
             ), row=1, col=1)
             
-            # Warning threshold
-            fig.add_hline(
-                y=75, line_dash="dash", line_color="orange",
-                annotation_text="Warning", row=1, col=1
-            )
-            fig.add_hline(
-                y=65, line_dash="dash", line_color="red",
-                annotation_text="Critical", row=1, col=1
-            )
+            # Warning threshold lines
+            x_range = [df['LAP_NUMBER'].min(), df['LAP_NUMBER'].max()]
+            fig.add_trace(go.Scatter(
+                x=x_range,
+                y=[75, 75],
+                mode='lines',
+                line=dict(color='orange', dash='dash', width=2),
+                showlegend=False,
+                hoverinfo='skip'
+            ), row=1, col=1)
+            
+            fig.add_trace(go.Scatter(
+                x=x_range,
+                y=[65, 65],
+                mode='lines',
+                line=dict(color='red', dash='dash', width=2),
+                showlegend=False,
+                hoverinfo='skip'
+            ), row=1, col=1)
         
         # Delta from best lap
         if 'DELTA_FROM_BEST' in df.columns:
@@ -206,11 +216,24 @@ class RaceVisualizer:
                 marker=dict(size=8)
             ), row=1, col=2)
             
-            # Warning lines
-            fig.add_hline(y=4, line_dash="dash", line_color="orange", 
-                         annotation_text="Warning", row=1, col=2)
-            fig.add_hline(y=2, line_dash="dash", line_color="red",
-                         annotation_text="Critical", row=1, col=2)
+            # Warning lines - add as separate scatter traces
+            fig.add_trace(go.Scatter(
+                x=[df['LAP_NUMBER'].min(), df['LAP_NUMBER'].max()],
+                y=[4, 4],
+                mode='lines',
+                line=dict(color='orange', dash='dash', width=2),
+                showlegend=False,
+                hoverinfo='skip'
+            ), row=1, col=2)
+            
+            fig.add_trace(go.Scatter(
+                x=[df['LAP_NUMBER'].min(), df['LAP_NUMBER'].max()],
+                y=[2, 2],
+                mode='lines',
+                line=dict(color='red', dash='dash', width=2),
+                showlegend=False,
+                hoverinfo='skip'
+            ), row=1, col=2)
         
         fig.update_xaxes(title_text="Lap Number", row=1, col=2)
         fig.update_yaxes(title_text="Laps Remaining", row=1, col=2)
@@ -505,25 +528,8 @@ class RaceVisualizer:
             specs=[
                 [{"type": "indicator"}, {"type": "indicator"}, {"type": "indicator"}],
                 [{"type": "indicator"}, {"type": "indicator"}, {"type": "indicator"}]
-            ],
-            subplot_titles=('Lap', 'Last Lap Time', 'Tire Life',
-                          'Fuel Remaining', 'Consistency', 'Pit Score')
+            ]
         )
-        
-        # Lap number
-        fig.add_trace(go.Indicator(
-            mode="number",
-            value=state.get('lap', 0),
-            title={'text': "Current Lap"},
-        ), row=1, col=1)
-        
-        # Last lap time
-        fig.add_trace(go.Indicator(
-            mode="number",
-            value=state.get('last_lap_time', 0),
-            number={'suffix': "s"},
-            title={'text': "Last Lap Time"},
-        ), row=1, col=2)
         
         # Tire life
         tire_life = state.get('tire_life', 1.0) * 100
@@ -535,14 +541,36 @@ class RaceVisualizer:
                 'axis': {'range': [0, 100]},
                 'bar': {'color': "green" if tire_life > 75 else "orange" if tire_life > 65 else "red"}
             }
-        ), row=1, col=3)
+        ), row=1, col=1)
+        
+        # Degradation rate
+        deg_rate = state.get('degradation_rate', 0)
+        fig.add_trace(go.Indicator(
+            mode="number+delta",
+            value=deg_rate,
+            number={'suffix': "s/lap", 'valueformat': ".3f"},
+            title={'text': "Tire Degradation"},
+            delta={'reference': 0, 'increasing': {'color': "red"}},
+        ), row=1, col=2)
         
         # Fuel remaining
         fig.add_trace(go.Indicator(
             mode="number",
             value=state.get('laps_of_fuel', 0),
-            number={'suffix': " laps"},
+            number={'suffix': " laps", 'valueformat': ".1f"},
             title={'text': "Fuel Remaining"},
+        ), row=1, col=3)
+        
+        # Pit recommendation score
+        pit_score = state.get('pit_score', 0)
+        fig.add_trace(go.Indicator(
+            mode="gauge+number",
+            value=pit_score,
+            title={'text': "Pit Now Score"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': "red" if pit_score > 70 else "orange" if pit_score > 40 else "green"}
+            }
         ), row=2, col=1)
         
         # Consistency
@@ -550,19 +578,19 @@ class RaceVisualizer:
             mode="gauge+number",
             value=state.get('consistency', 100),
             title={'text': "Consistency"},
-            gauge={'axis': {'range': [0, 100]}}
-        ), row=2, col=2)
-        
-        # Pit score
-        pit_score = state.get('pit_score', 0)
-        fig.add_trace(go.Indicator(
-            mode="gauge+number",
-            value=pit_score,
-            title={'text': "Pit Score"},
             gauge={
                 'axis': {'range': [0, 100]},
-                'bar': {'color': "red" if pit_score > 70 else "orange" if pit_score > 40 else "green"}
+                'bar': {'color': "green" if state.get('consistency', 100) > 80 else "orange" if state.get('consistency', 100) > 60 else "red"}
             }
+        ), row=2, col=2)
+        
+        # Laps in stint
+        laps_in_stint = state.get('lap', 0)  # Simplified - actual stint tracking would be more complex
+        fig.add_trace(go.Indicator(
+            mode="number",
+            value=laps_in_stint,
+            number={'suffix': " laps"},
+            title={'text': "Current Stint"},
         ), row=2, col=3)
         
         fig.update_layout(

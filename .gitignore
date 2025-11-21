@@ -10,3 +10,9 @@
 
 # datasets
 dataset
+
+#tests
+tests
+
+#pycache
+__pycache__/

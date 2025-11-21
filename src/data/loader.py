@@ -80,9 +80,16 @@ class RaceDataLoader:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'23_AnalysisEnduranceWithSections_Race {race}_Anonymized.CSV'
             else:
-                file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_ Race {race}_Anonymized.CSV'
+                # COTA has inconsistent naming: Race 1 has no space, Race 2 has space before "Race"
+                if race == 1:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_Race {race}_Anonymized.CSV'
+                else:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_ Race {race}_Anonymized.CSV'
             
             df = pd.read_csv(file_path, sep=';')
+            
+            # Strip whitespace from column names
+            df.columns = df.columns.str.strip()
             
             # Parse lap times
             df['LAP_TIME_SECONDS'] = df['LAP_TIME'].apply(parse_lap_time)
@@ -120,9 +127,14 @@ class RaceDataLoader:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'26_Weather_Race {race}_Anonymized.CSV'
             else:
-                file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'26_Weather_ Race {race}_Anonymized.CSV'
+                # COTA has inconsistent naming
+                if race == 1:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'26_Weather_Race {race}_Anonymized.CSV'
+                else:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'26_Weather_ Race {race}_Anonymized.CSV'
             
             df = pd.read_csv(file_path, sep=';')
+            df.columns = df.columns.str.strip()
             df['TIME_UTC_STR'] = pd.to_datetime(df['TIME_UTC_STR'])
             
             # Convert numeric columns
@@ -158,9 +170,14 @@ class RaceDataLoader:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
             else:
-                file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
+                # COTA has inconsistent naming
+                if race == 1:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
+                else:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'03_Provisional Results_ Race {race}_Anonymized.CSV'
             
             df = pd.read_csv(file_path, sep=';')
+            df.columns = df.columns.str.strip()
             
             # Parse times
             df['TOTAL_TIME_SECONDS'] = df['TOTAL_TIME'].apply(parse_lap_time)
@@ -193,9 +210,14 @@ class RaceDataLoader:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'99_Best 10 Laps By Driver_Race {race}_Anonymized.CSV'
             else:
-                file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'99_Best 10 Laps By Driver_ Race {race}_Anonymized.CSV'
+                # COTA has inconsistent naming
+                if race == 1:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'99_Best 10 Laps By Driver_Race {race}_Anonymized.CSV'
+                else:
+                    file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'99_Best 10 Laps By Driver_ Race {race}_Anonymized.CSV'
             
             df = pd.read_csv(file_path, sep=';')
+            df.columns = df.columns.str.strip()
             
             # Parse all lap times
             lap_cols = [col for col in df.columns if col.startswith('BESTLAP_') and not col.endswith('_LAPNUM')]

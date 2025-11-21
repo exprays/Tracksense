@@ -127,13 +127,20 @@ def main():
     
     # Lap selection
     max_lap = int(processed_data['LAP_NUMBER'].max())
-    current_lap = st.sidebar.slider(
-        "Current Lap",
-        min_value=1,
-        max_value=max_lap,
-        value=max_lap,
-        help="Simulate strategy at different points in the race"
-    )
+    min_lap = int(processed_data['LAP_NUMBER'].min())
+    
+    # Only show slider if there's more than one lap
+    if max_lap > min_lap:
+        current_lap = st.sidebar.slider(
+            "Current Lap",
+            min_value=min_lap,
+            max_value=max_lap,
+            value=max_lap,
+            help="Simulate strategy at different points in the race"
+        )
+    else:
+        current_lap = max_lap
+        st.sidebar.info(f"Only {max_lap} lap(s) of data available")
     
     # Filter data up to current lap
     current_data = processed_data[processed_data['LAP_NUMBER'] <= current_lap].copy()
