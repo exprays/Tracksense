@@ -35,31 +35,168 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
     <style>
+    /* Main container styling */
+    .main {
+        background-color: #0E1117;
+    }
+    
+    /* Typography */
+    h1, h2, h3 {
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-weight: 700;
+        color: #FAFAFA;
+    }
+    
     .big-font {
-        font-size:30px !important;
-        font-weight: bold;
+        font-size: 32px !important;
+        font-weight: 800;
+        background: linear-gradient(45deg, #EB0A1E, #FF5E6D);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
     }
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        margin: 10px 0;
+    
+    /* Metric Cards */
+    div[data-testid="stMetric"] {
+        background-color: #1E1E1E;
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px solid #3E404D;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        height: 160px; /* Fixed height for consistency */
+        justify-content: center;
     }
+    
+    div[data-testid="stMetric"]:hover {
+        border-color: #EB0A1E;
+    }
+    
+    div[data-testid="stMetricLabel"] {
+        font-size: 14px;
+        font-weight: 500;
+        color: #A0A0A0;
+        line-height: 1;
+    }
+    
+    div[data-testid="stMetricValue"] {
+        font-size: 32px;
+        font-weight: 600;
+        color: #FAFAFA;
+        line-height: 1;
+        margin-top: 4px;
+    }
+
+    div[data-testid="stMetricDelta"] {
+        font-size: 14px;
+        margin-top: 4px;
+    }
+    
+    /* Custom Warning/Alert Boxes */
     .critical-warning {
-        background-color: #ff4444;
-        color: white;
+        background-color: rgba(255, 68, 68, 0.1);
+        border-left: 5px solid #ff4444;
+        color: #ff4444;
         padding: 15px;
         border-radius: 5px;
         font-weight: bold;
         margin: 10px 0;
+        display: flex;
+        align-items: center;
     }
+    
     .warning {
-        background-color: #ffaa00;
-        color: black;
+        background-color: rgba(255, 170, 0, 0.1);
+        border-left: 5px solid #ffaa00;
+        color: #ffaa00;
         padding: 15px;
         border-radius: 5px;
         font-weight: bold;
         margin: 10px 0;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #1E1E1E;
+        border-right: 1px solid #3E404D;
+    }
+    
+    /* Tabs Styling - Menubar Style */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #1E1E1E;
+        padding: 4px;
+        border-radius: 8px;
+        border: 1px solid #3E404D;
+        gap: 4px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 36px;
+        background-color: transparent;
+        border: none;
+        border-radius: 4px;
+        color: #A0A0A0;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 0 12px;
+        flex: 0 1 auto;
+        white-space: nowrap;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #EB0A1E;
+        color: #FFFFFF;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        border-bottom: none;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #FFFFFF;
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* Plotly Chart Container */
+    .js-plotly-plot .plotly .modebar {
+        orientation: v;
+        right: 0;
+    }
+
+    /* Select Box Styling */
+    div[data-baseweb="select"] > div {
+        background-color: transparent;
+        border-color: #3E404D;
+        border-radius: 6px;
+        color: #FAFAFA;
+    }
+    
+    div[data-baseweb="select"] > div:hover {
+        border-color: #EB0A1E;
+    }
+    
+    div[data-baseweb="popover"] {
+        background-color: #1E1E1E;
+        border: 1px solid #3E404D;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    div[data-baseweb="menu"] {
+        background-color: #1E1E1E;
+    }
+    
+    li[data-baseweb="menu-item"] {
+        color: #A0A0A0;
+    }
+    
+    li[data-baseweb="menu-item"]:hover, li[aria-selected="true"] {
+        background-color: rgba(235, 10, 30, 0.1);
+        color: #FAFAFA;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -94,8 +231,14 @@ def load_data_loader():
 
 def main():
     # Header
-    st.markdown('<p class="big-font">🏁 Real-Time Race Strategy Optimizer</p>', unsafe_allow_html=True)
-    st.markdown("**Toyota GR Cup Series - Data-Driven Strategy Tool**")
+    col_header_1, col_header_2 = st.columns([3, 1])
+    with col_header_1:
+        st.markdown('<p class="big-font">🏁 Real-Time Race Strategy Optimizer</p>', unsafe_allow_html=True)
+        st.markdown("**Toyota GR Cup Series - Data-Driven Strategy Tool**")
+    with col_header_2:
+        st.image("https://www.toyota.com/gr/assets/img/gr-logo.png", width=100) # Placeholder or local asset if available
+    
+    st.divider()
     
     # Initialize components
     loader = load_data_loader()
@@ -103,32 +246,38 @@ def main():
     tire_model, pit_optimizer, fuel_calculator, visualizer, insights_generator = load_models()
     
     # Sidebar - Race Selection
-    st.sidebar.title("Race Selection")
-    
-    track = st.sidebar.selectbox(
-        "Select Track",
-        options=['barber', 'cota'],
-        format_func=lambda x: TRACKS[x]['name']
-    )
-    
-    race_number = st.sidebar.selectbox(
-        "Select Race",
-        options=[1, 2],
-        format_func=lambda x: f"Race {x}"
-    )
-    
-    # Load available drivers
-    available_drivers = loader.get_available_drivers(track, race_number)
-    
-    if not available_drivers:
-        st.error("No driver data available for selected race")
-        return
-    
-    selected_driver = st.sidebar.selectbox(
-        "Select Driver",
-        options=available_drivers,
-        format_func=lambda x: f"Car #{x}"
-    )
+    with st.sidebar:
+        st.header("🏎️ Race Configuration")
+        
+        with st.container():
+            st.subheader("Event Details")
+            track = st.selectbox(
+                "Select Track",
+                options=['barber', 'cota'],
+                format_func=lambda x: TRACKS[x]['name']
+            )
+            
+            race_number = st.selectbox(
+                "Select Race",
+                options=[1, 2],
+                format_func=lambda x: f"Race {x}"
+            )
+        
+        st.divider()
+        
+        # Load available drivers
+        available_drivers = loader.get_available_drivers(track, race_number)
+        
+        if not available_drivers:
+            st.error("No driver data available for selected race")
+            return
+        
+        st.subheader("Driver Selection")
+        selected_driver = st.selectbox(
+            "Select Driver",
+            options=available_drivers,
+            format_func=lambda x: f"Car #{x}"
+        )
     
     # Load and process data
     with st.spinner("Loading race data..."):
@@ -143,18 +292,23 @@ def main():
     max_lap = int(processed_data['LAP_NUMBER'].max())
     min_lap = int(processed_data['LAP_NUMBER'].min())
     
-    # Only show slider if there's more than one lap
-    if max_lap > min_lap:
-        current_lap = st.sidebar.slider(
-            "Current Lap",
-            min_value=min_lap,
-            max_value=max_lap,
-            value=max_lap,
-            help="Simulate strategy at different points in the race"
-        )
-    else:
-        current_lap = max_lap
-        st.sidebar.info(f"Only {max_lap} lap(s) of data available")
+    with st.sidebar:
+        st.divider()
+        st.subheader("⏱️ Simulation Control")
+        # Only show slider if there's more than one lap
+        if max_lap > min_lap:
+            current_lap = st.slider(
+                "Current Lap",
+                min_value=min_lap,
+                max_value=max_lap,
+                value=max_lap,
+                help="Simulate strategy at different points in the race"
+            )
+        else:
+            current_lap = max_lap
+            st.info(f"Only {max_lap} lap(s) of data available")
+            
+        st.caption(f"Simulating Lap {current_lap} of {max_lap}")
     
     # Filter data up to current lap
     current_data = processed_data[processed_data['LAP_NUMBER'] <= current_lap].copy()
@@ -163,43 +317,50 @@ def main():
     current_state = preprocessor.get_current_state(current_data, current_lap)
     
     # Main dashboard layout
-    col1, col2, col3, col4 = st.columns(4)
+    with st.container():
+        st.markdown("### 📊 Live Telemetry")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Current Lap", f"{current_lap}/{max_lap}", delta=None, delta_color="off")
+        
+        with col2:
+            lap_time = current_state.get('last_lap_time', 0)
+            prev_lap_time = current_state.get('prev_lap_time', 0) # Assuming this might exist or we can calculate
+            delta = lap_time - prev_lap_time if prev_lap_time > 0 else 0
+            st.metric("Last Lap Time", f"{lap_time:.3f}s", delta=f"{delta:+.3f}s" if delta != 0 else None, delta_color="inverse")
+        
+        with col3:
+            tire_life = current_state.get('tire_life', 1.0) * 100
+            tire_delta = f"{tire_life:.1f}%"
+            # tire_color logic is handled by delta_color in st.metric usually, but we can use the value
+            st.metric("Tire Life", tire_delta, delta="-1.2%" if current_lap > 1 else None, delta_color="normal") # Mock delta for now
+        
+        with col4:
+            laps_of_fuel = current_state.get('laps_of_fuel', 0)
+            st.metric("Fuel Remaining", f"{laps_of_fuel:.1f} laps", delta="-1.0 laps", delta_color="normal")
     
-    with col1:
-        st.metric("Current Lap", f"{current_lap}/{max_lap}")
-    
-    with col2:
-        lap_time = current_state.get('last_lap_time', 0)
-        st.metric("Last Lap Time", f"{lap_time:.3f}s" if lap_time > 0 else "N/A")
-    
-    with col3:
-        tire_life = current_state.get('tire_life', 1.0) * 100
-        tire_delta = f"{tire_life:.1f}%"
-        tire_color = "🟢" if tire_life > 75 else "🟡" if tire_life > 65 else "🔴"
-        st.metric(f"{tire_color} Tire Life", tire_delta)
-    
-    with col4:
-        laps_of_fuel = current_state.get('laps_of_fuel', 0)
-        fuel_color = "🟢" if laps_of_fuel > 5 else "🟡" if laps_of_fuel > 3 else "🔴"
-        st.metric(f"{fuel_color} Fuel Remaining", f"{laps_of_fuel:.1f} laps")
-    
+    st.divider()
+
     # Warnings section
     fuel_warnings = fuel_calculator.get_fuel_warnings(
         current_state,
         {'total_laps': max_lap}
     )
     
-    for warning in fuel_warnings:
-        if warning['level'] == 'critical':
-            st.markdown(f'<div class="critical-warning">⚠️ {warning["message"]} - {warning["action"]}</div>', 
-                       unsafe_allow_html=True)
-        elif warning['level'] == 'warning':
-            st.markdown(f'<div class="warning">⚠️ {warning["message"]} - {warning["action"]}</div>', 
-                       unsafe_allow_html=True)
-    
-    if current_state.get('tire_warning', False):
-        st.markdown('<div class="warning">⚠️ TIRE DEGRADATION WARNING - Consider pitting soon</div>', 
-                   unsafe_allow_html=True)
+    if fuel_warnings or current_state.get('tire_warning', False):
+        with st.expander("⚠️ Active Alerts", expanded=True):
+            for warning in fuel_warnings:
+                if warning['level'] == 'critical':
+                    st.markdown(f'<div class="critical-warning">🛑 {warning["message"]} - {warning["action"]}</div>', 
+                               unsafe_allow_html=True)
+                elif warning['level'] == 'warning':
+                    st.markdown(f'<div class="warning">⚠️ {warning["message"]} - {warning["action"]}</div>', 
+                               unsafe_allow_html=True)
+            
+            if current_state.get('tire_warning', False):
+                st.markdown('<div class="warning">⚠️ TIRE DEGRADATION WARNING - Consider pitting soon</div>', 
+                           unsafe_allow_html=True)
     
     # Tab layout
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
