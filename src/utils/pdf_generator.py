@@ -31,12 +31,12 @@ logger = logging.getLogger(__name__)
 class RaceStrategyPDFReport:
     """Generate comprehensive PDF reports for race strategy analysis"""
     
-    def __init__(self, output_path: str):
+    def __init__(self, output_path):
         """
         Initialize PDF report generator
         
         Args:
-            output_path: Path to save the PDF file
+            output_path: Path to save the PDF file or BytesIO buffer
         """
         self.output_path = output_path
         self.doc = SimpleDocTemplate(output_path, pagesize=letter,
@@ -319,28 +319,32 @@ class RaceStrategyPDFReport:
             return False
 
 
-def generate_race_report(track: str, race: int, driver: str, 
+def generate_race_report(driver_number, track_name: str, race_number: int,
+                        current_state: Dict,
                         processed_data: pd.DataFrame,
                         insights: Dict,
-                        output_path: str) -> bool:
+                        comparison_data: Optional[pd.DataFrame] = None) -> bytes:
     """
     Generate a complete race strategy report
     
     Args:
-        track: Track name
-        race: Race number
-        driver: Driver identifier
+        driver_number: Driver car number
+        track_name: Track name
+        race_number: Race number
+        current_state: Current race state dictionary
         processed_data: Processed race data
         insights: AI insights dictionary
-        output_path: Path to save PDF
+        comparison_data: Optional comparison data for multiple drivers
     
     Returns:
-        True if successful
+        PDF file as bytes
     """
-    report = RaceStrategyPDFReport(output_path)
+    # Generate in-memory PDF
+    pdf_buffer = io.BytesIO()
+    report = RaceStrategyPDFReport(pdf_buffer)
     
     # Cover page
-    report.add_cover_page(track, race, driver)
+    report.add_cover_page(track_name, race_number, f"Car #{driver_number}")
     
     # Executive summary
     summary_data = {
@@ -362,5 +366,13 @@ def generate_race_report(track: str, race: int, driver: str,
     if insights and 'priority_recommendations' in insights:
         report.add_strategy_recommendations(insights['priority_recommendations'][:5])
     
+    # Multi-driver comparison if provided
+    if comparison_data is not None and not comparison_data.empty:
+        report.add_comparison_table(comparison_data)
+    
     # Generate PDF
-    return report.generate()
+    report.generate()
+    
+    # Return bytes
+    pdf_buffer.seek(0)
+    return pdf_buffer.getvalue()

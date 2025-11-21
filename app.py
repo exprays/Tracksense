@@ -1002,14 +1002,26 @@ def main():
             try:
                 # Generate insights for the report
                 insights_gen = RaceInsightsGenerator()
+                
+                # Prepare tire predictions
+                tire_predictions = {
+                    'future_predictions': [],
+                    'pit_lap_recommendation': current_state.get('lap', 0) + 5
+                }
+                
+                # Prepare race context
+                race_ctx = {
+                    'total_laps': max_lap,
+                    'current_position': 1
+                }
+                
                 insights = insights_gen.generate_comprehensive_insights(
-                    current_state,
-                    processed_data,
-                    predictions={
-                        'tire_life': current_state.get('tire_life', 0.8),
-                        'pit_recommended': current_state.get('tire_life', 0.8) < 0.7
-                    },
-                    pit_window={'optimal_start': 8, 'optimal_end': 12}
+                    current_state=current_state,
+                    race_context=race_ctx,
+                    processed_data=processed_data,
+                    tire_predictions=tire_predictions,
+                    pit_window={'optimal_start': 8, 'optimal_end': 12},
+                    strategies=[]
                 )
                 
                 # Create comparison data if multiple drivers

@@ -50,9 +50,26 @@ class RaceDataPreprocessor:
             df['DELTA_FROM_BEST'] = 0
             df['DELTA_PERCENT'] = 0
         
-        # Tire life estimation (inverse of degradation)
-        df['TIRE_LIFE_ESTIMATE'] = 1.0 - (df['LAP_NUMBER'] * TIRE_DEGRADATION['base_degradation_rate'])
-        df['TIRE_LIFE_ESTIMATE'] = df['TIRE_LIFE_ESTIMATE'].clip(lower=0, upper=1)
+        # Tire life estimation with progressive degradation
+        # Combines stint progression with performance degradation
+        if 'LAPS_IN_STINT' in df.columns:
+            # Base wear from laps in stint (exponential decay)
+            stint_wear = 1.0 - (1.0 - np.exp(-df['LAPS_IN_STINT'] * 0.05)) * 0.5
+            
+            # Additional wear from lap time degradation
+            if 'DELTA_PERCENT' in df.columns and df['DELTA_PERCENT'].notna().any():
+                # Normalize delta to 0-1 range (0-10% slowdown = 0-0.3 tire wear)
+                perf_wear_factor = (df['DELTA_PERCENT'] / 100).clip(0, 0.3)
+                df['TIRE_LIFE_ESTIMATE'] = stint_wear * (1.0 - perf_wear_factor)
+            else:
+                df['TIRE_LIFE_ESTIMATE'] = stint_wear
+        else:
+            # Fallback: progressive degradation based on lap number
+            # Not linear - tires degrade faster as they wear
+            lap_factor = df['LAP_NUMBER'] / df['LAP_NUMBER'].max() if len(df) > 0 else 0
+            df['TIRE_LIFE_ESTIMATE'] = 1.0 - (lap_factor ** 1.5) * 0.6  # Max 60% wear
+        
+        df['TIRE_LIFE_ESTIMATE'] = df['TIRE_LIFE_ESTIMATE'].clip(lower=0.3, upper=1.0)  # Minimum 30% life
         
         # Degradation rate (seconds per lap) - calculate rolling rate
         df['DEGRADATION_RATE'] = 0.0
