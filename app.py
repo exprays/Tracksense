@@ -19,6 +19,9 @@ from src.models.pit_optimizer import PitStopOptimizer
 from src.models.fuel_model import FuelCalculator
 from src.models.model_trainer import ModelTrainer
 from src.models.ai_insights import RaceInsightsGenerator
+from src.models.nlp_strategy import StrategyQueryEngine
+from src.analytics.multi_driver_comparison import MultiDriverComparison
+from src.utils.pdf_generator import generate_race_report
 from src.utils.constants import TRACKS, DASHBOARD
 
 # Page configuration
@@ -199,14 +202,16 @@ def main():
                    unsafe_allow_html=True)
     
     # Tab layout
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
         "📊 Overview", 
         "🔧 Pit Strategy", 
         "⏱️ Performance", 
         "⛽ Fuel Management",
         "🌡️ Conditions",
         "🤖 AI Insights",
-        "🎓 Model Training"
+        "🎓 Model Training",
+        "🏆 Driver Comparison",
+        "💬 Strategy Chat"
     ])
     
     with tab1:
@@ -778,6 +783,270 @@ def main():
             
             if st.checkbox("Show detailed training history JSON"):
                 st.json(training_history)
+    
+    # Tab 8: Multi-Driver Comparison
+    with tab8:
+        st.subheader("🏆 Multi-Driver Performance Comparison")
+        st.write("Compare multiple drivers' performance across key metrics")
+        
+        # Load all drivers' data for comparison
+        if loader and preprocessor:
+            st.markdown("### Select Drivers to Compare")
+            
+            # Multi-select for drivers
+            comparison_drivers = st.multiselect(
+                "Choose 2 or more drivers",
+                options=available_drivers,
+                default=available_drivers[:min(3, len(available_drivers))],
+                help="Select drivers to compare side-by-side",
+                format_func=lambda x: f"Car #{x}"
+            )
+            
+            if len(comparison_drivers) >= 2:
+                # Load data for all selected drivers
+                with st.spinner("Loading comparison data..."):
+                    all_driver_data = []
+                    for driver_no in comparison_drivers:
+                        driver_data = loader.get_driver_data(track, race_number, driver_no)
+                        driver_processed = preprocessor.process_driver_data(driver_data)
+                        if not driver_processed.empty:
+                            driver_processed['NO'] = driver_no  # Add driver number column
+                            all_driver_data.append(driver_processed)
+                    
+                    if all_driver_data:
+                        combined_data = pd.concat(all_driver_data, ignore_index=True)
+                        multi_comp = MultiDriverComparison(combined_data)
+                        
+                        selected_drivers = comparison_drivers
+                        
+                        # Performance comparison
+                        st.markdown("### 📊 Overall Performance")
+                        perf_df = multi_comp.get_performance_comparison(selected_drivers)
+                        
+                        if not perf_df.empty:
+                            # Check which columns exist
+                            highlight_cols = []
+                            if 'Best Lap' in perf_df.columns:
+                                highlight_cols.append('Best Lap')
+                            if 'Avg Lap' in perf_df.columns:
+                                highlight_cols.append('Avg Lap')
+                            
+                            if highlight_cols:
+                                st.dataframe(perf_df.style.highlight_min(
+                                    subset=highlight_cols,
+                                    color='lightgreen'
+                                ), use_container_width=True)
+                            else:
+                                st.dataframe(perf_df, use_container_width=True)
+                            
+                            # Lap time evolution chart
+                            st.markdown("### 📈 Lap Time Evolution")
+                            fig = multi_comp.plot_lap_time_evolution(selected_drivers)
+                            st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Consistency comparison
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            st.markdown("### 🎯 Consistency Comparison")
+                            consist_df = multi_comp.get_consistency_comparison(selected_drivers)
+                            if not consist_df.empty:
+                                st.dataframe(consist_df.style.highlight_max(
+                                    subset=['Consistency Score'],
+                                    color='lightgreen'
+                                ), use_container_width=True)
+                        
+                        with col2:
+                            st.markdown("### 🏁 Sector Performance")
+                            sector_df = multi_comp.get_sector_comparison(selected_drivers)
+                            if not sector_df.empty:
+                                st.dataframe(sector_df, use_container_width=True)
+                        
+                        # Tire degradation comparison
+                        st.markdown("### 🛞 Tire Degradation Comparison")
+                        fig = multi_comp.plot_tire_degradation_comparison(selected_drivers)
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Head-to-head comparison
+                        if len(selected_drivers) == 2:
+                            st.markdown("### ⚔️ Head-to-Head Analysis")
+                            max_lap_comparison = int(combined_data['LAP_NUMBER'].max())
+                            lap_number = st.slider(
+                                "Select lap to compare",
+                                min_value=1,
+                                max_value=max_lap_comparison,
+                                value=1
+                            )
+                            
+                            h2h_result = multi_comp.get_head_to_head(
+                                selected_drivers[0],
+                                selected_drivers[1],
+                                lap_number
+                            )
+                            
+                            if h2h_result['valid']:
+                                col1, col2, col3 = st.columns(3)
+                                
+                                with col1:
+                                    st.metric(
+                                        f"Car #{selected_drivers[0]}",
+                                        f"{h2h_result['driver1_time']:.3f}s"
+                                    )
+                                
+                                with col2:
+                                    diff = h2h_result['time_difference']
+                                    st.metric(
+                                        "Time Difference",
+                                        f"{abs(diff):.3f}s",
+                                        delta=f"Car #{h2h_result['faster_driver']} faster"
+                                    )
+                                
+                                with col3:
+                                    st.metric(
+                                        f"Car #{selected_drivers[1]}",
+                                        f"{h2h_result['driver2_time']:.3f}s"
+                                    )
+                            else:
+                                st.info("No lap time data available for selected lap.")
+                    else:
+                        st.warning("No data available for selected drivers.")
+                
+            elif len(comparison_drivers) == 1:
+                st.info("Please select at least 2 drivers to compare.")
+            else:
+                st.info("Please select drivers from the list above.")
+        else:
+            st.warning("Please load race data from the sidebar first.")
+    
+    # Tab 9: Natural Language Strategy Chat
+    with tab9:
+        st.subheader("💬 Strategy Chat Assistant")
+        st.write("Ask questions about race strategy in plain English!")
+        
+        # Initialize NLP engine
+        if 'nlp_engine' not in st.session_state:
+            st.session_state.nlp_engine = StrategyQueryEngine()
+            st.session_state.chat_history = []
+        
+        nlp_engine = st.session_state.nlp_engine
+        
+        # Set context if data is available
+        if preprocessor and processed_data is not None and current_state:
+            race_context = {
+                'total_laps': 30,  # Default, can be made configurable
+                'track': track,
+                'race': race_number
+            }
+            nlp_engine.set_context(current_state, processed_data, race_context)
+        
+        # Suggested questions
+        st.markdown("### 💡 Suggested Questions")
+        suggestions = nlp_engine.get_suggested_questions()
+        
+        cols = st.columns(4)
+        for idx, suggestion in enumerate(suggestions):
+            with cols[idx % 4]:
+                if st.button(suggestion, key=f"suggest_{idx}"):
+                    st.session_state.chat_history.append({
+                        'query': suggestion,
+                        'answer': nlp_engine.process_query(suggestion)
+                    })
+        
+        st.markdown("---")
+        
+        # Chat interface
+        st.markdown("### 🗨️ Ask Your Question")
+        
+        user_query = st.text_input(
+            "Type your question:",
+            placeholder="e.g., How are my tires doing?",
+            key="user_query"
+        )
+        
+        col1, col2 = st.columns([1, 5])
+        with col1:
+            ask_button = st.button("🚀 Ask", type="primary")
+        with col2:
+            if st.button("🗑️ Clear History"):
+                st.session_state.chat_history = []
+                st.rerun()
+        
+        if ask_button and user_query:
+            if not nlp_engine.context:
+                st.warning("⚠️ Please load race data from the sidebar first to enable strategy chat.")
+            else:
+                answer = nlp_engine.process_query(user_query)
+                st.session_state.chat_history.append({
+                    'query': user_query,
+                    'answer': answer
+                })
+        
+        # Display chat history (most recent first)
+        if st.session_state.chat_history:
+            st.markdown("### 📜 Conversation History")
+            
+            for idx, chat in enumerate(reversed(st.session_state.chat_history)):
+                with st.container():
+                    st.markdown(f"**Q{len(st.session_state.chat_history) - idx}:** {chat['query']}")
+                    st.markdown(chat['answer'])
+                    st.markdown("---")
+        else:
+            st.info("👋 No questions asked yet. Try one of the suggested questions above or type your own!")
+    
+    # Add PDF Export button to sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📄 Export Options")
+    
+    if st.sidebar.button("📥 Generate PDF Report", type="primary"):
+        if processed_data is not None and current_state:
+            try:
+                # Generate insights for the report
+                insights_gen = RaceInsightsGenerator()
+                insights = insights_gen.generate_comprehensive_insights(
+                    current_state,
+                    processed_data,
+                    predictions={
+                        'tire_life': current_state.get('tire_life', 0.8),
+                        'pit_recommended': current_state.get('tire_life', 0.8) < 0.7
+                    },
+                    pit_window={'optimal_start': 8, 'optimal_end': 12}
+                )
+                
+                # Create comparison data if multiple drivers
+                comparison_data = None
+                if 'NO' in processed_data.columns:
+                    all_drivers = processed_data['NO'].unique()
+                    if len(all_drivers) > 1:
+                        multi_comp = MultiDriverComparison(processed_data)
+                        comparison_data = multi_comp.get_performance_comparison(
+                            all_drivers[:min(5, len(all_drivers))]
+                        )
+                
+                # Generate PDF
+                pdf_bytes = generate_race_report(
+                    driver_number=selected_driver,
+                    track_name=TRACKS.get(track, {}).get('name', track),
+                    race_number=race_number,
+                    current_state=current_state,
+                    processed_data=processed_data,
+                    insights=insights,
+                    comparison_data=comparison_data
+                )
+                
+                # Download button
+                st.sidebar.download_button(
+                    label="💾 Download Report",
+                    data=pdf_bytes,
+                    file_name=f"race_strategy_report_car{selected_driver}_{track}_R{race_number}.pdf",
+                    mime="application/pdf"
+                )
+                
+                st.sidebar.success("✓ PDF report generated successfully!")
+                
+            except Exception as e:
+                st.sidebar.error(f"Error generating PDF: {str(e)}")
+        else:
+            st.sidebar.warning("Please load race data first to generate a report.")
     
     # Footer
     st.markdown("---")
