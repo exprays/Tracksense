@@ -18,18 +18,21 @@
 ## System Components
 
 ### 1. Go Simulator (`simulator/`)
+
 - Reads CSV telemetry files or generates synthetic data
 - Streams telemetry over WebSocket at configurable rate
 - Supports playback speed control (0.5x - 4x)
 - Session management (start/pause/stop)
 
 ### 2. Python Receiver (`src/realtime/receiver.py`)
+
 - WebSocket server listening on `ws://localhost:8080/telemetry/stream`
 - Validates incoming messages
 - Stores in thread-safe buffer
 - Triggers ML feature generation and predictions
 
 ### 3. Streamlit Live Dashboard (`app_live.py`)
+
 - Real-time visualization of telemetry
 - Live gauges for speed, RPM, throttle, brake
 - ML predictions: lap time, tire deg, overtake probability, incident risk
@@ -39,17 +42,20 @@
 ## Installation
 
 ### Prerequisites
+
 - Python 3.9+
 - Go 1.21+
 
 ### Setup
 
 1. **Install Python dependencies:**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 2. **Install Go dependencies:**
+
 ```bash
 cd simulator
 go mod tidy
@@ -61,11 +67,13 @@ cd ..
 ### Step 1: Start Python Receiver
 
 Open terminal 1:
+
 ```bash
 python -m src.realtime.receiver
 ```
 
 Expected output:
+
 ```
 INFO:websockets.server:server listening on 0.0.0.0:8080
 INFO:__main__:Telemetry receiver started on ws://0.0.0.0:8080
@@ -75,6 +83,7 @@ INFO:__main__:Waiting for simulator connections...
 ### Step 2: Start Live Dashboard
 
 Open terminal 2:
+
 ```bash
 streamlit run app_live.py
 ```
@@ -86,12 +95,14 @@ Dashboard will open at `http://localhost:8501`
 Open terminal 3:
 
 **CSV Playback Mode:**
+
 ```bash
 cd simulator
 go run . -mode csv -csv ../dataset/barber-motorsports-park/barber/R1_barber_telemetry_data.csv -track barber -speed 1.0 -rate 10
 ```
 
 **Synthetic Mode:**
+
 ```bash
 cd simulator
 go run . -mode synthetic -track barber -rate 10
@@ -101,14 +112,14 @@ go run . -mode synthetic -track barber -rate 10
 
 ### Simulator Flags
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-mode` | `csv` | Mode: `csv` or `synthetic` |
-| `-csv` | - | Path to CSV file (required for csv mode) |
-| `-track` | `barber` | Track ID: `barber` or `cota` |
-| `-speed` | `1.0` | Playback speed (0.5-4.0) |
-| `-rate` | `10` | Sample rate in Hz |
-| `-url` | `ws://localhost:8080/telemetry/stream` | Backend URL |
+| Flag     | Default                                | Description                              |
+| -------- | -------------------------------------- | ---------------------------------------- |
+| `-mode`  | `csv`                                  | Mode: `csv` or `synthetic`               |
+| `-csv`   | -                                      | Path to CSV file (required for csv mode) |
+| `-track` | `barber`                               | Track ID: `barber` or `cota`             |
+| `-speed` | `1.0`                                  | Playback speed (0.5-4.0)                 |
+| `-rate`  | `10`                                   | Sample rate in Hz                        |
+| `-url`   | `ws://localhost:8080/telemetry/stream` | Backend URL                              |
 
 ### Dashboard Settings
 
@@ -172,6 +183,7 @@ go run . -mode csv \
 ## Message Protocol
 
 ### Control Message (Session Start)
+
 ```json
 {
   "type": "control",
@@ -194,6 +206,7 @@ go run . -mode csv \
 ```
 
 ### Telemetry Message
+
 ```json
 {
   "type": "telemetry",
@@ -242,6 +255,7 @@ The system generates real-time predictions:
 ### "Connection refused" Error
 
 Ensure Python receiver is running:
+
 ```bash
 python -m src.realtime.receiver
 ```
@@ -266,6 +280,7 @@ Check that port 8080 is not blocked by firewall.
 ### CSV File Not Found
 
 Use correct relative path from simulator directory:
+
 ```bash
 cd simulator
 go run . -csv ../dataset/barber-motorsports-park/barber/R1_barber_telemetry_data.csv

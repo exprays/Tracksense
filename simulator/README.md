@@ -39,14 +39,14 @@ go build
 
 ## Command Line Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-mode` | `csv` | Simulator mode: `csv` or `synthetic` |
-| `-csv` | - | Path to CSV telemetry file (required for csv mode) |
-| `-track` | `barber` | Track ID: `barber` or `cota` |
-| `-speed` | `1.0` | Playback speed multiplier (0.5-4.0) |
-| `-rate` | `10` | Sample rate in Hz |
-| `-url` | `ws://localhost:8080/telemetry/stream` | Backend WebSocket URL |
+| Flag     | Default                                | Description                                        |
+| -------- | -------------------------------------- | -------------------------------------------------- |
+| `-mode`  | `csv`                                  | Simulator mode: `csv` or `synthetic`               |
+| `-csv`   | -                                      | Path to CSV telemetry file (required for csv mode) |
+| `-track` | `barber`                               | Track ID: `barber` or `cota`                       |
+| `-speed` | `1.0`                                  | Playback speed multiplier (0.5-4.0)                |
+| `-rate`  | `10`                                   | Sample rate in Hz                                  |
+| `-url`   | `ws://localhost:8080/telemetry/stream` | Backend WebSocket URL                              |
 
 ## Message Protocol
 
