@@ -13,6 +13,16 @@ TRACKS = {
         'name': 'Circuit of the Americas',
         'length_km': 5.513,
         'sectors': 3
+    },
+    'indianapolis': {
+        'name': 'Indianapolis Motor Speedway',
+        'length_km': 4.014,
+        'sectors': 3
+    },
+    'sebring': {
+        'name': 'Sebring International Raceway',
+        'length_km': 6.019,
+        'sectors': 3
     }
 }
 

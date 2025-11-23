@@ -26,7 +26,7 @@ from src.utils.constants import TRACKS, DASHBOARD
 
 # Page configuration
 st.set_page_config(
-    page_title="Race Strategy Optimizer",
+    page_title="Toyota TrackSense",
     page_icon="🏁",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -48,7 +48,7 @@ st.markdown("""
     }
     
     .big-font {
-        font-size: 32px !important;
+        font-size: 48px !important;
         font-weight: 800;
         background: linear-gradient(45deg, #EB0A1E, #FF5E6D);
         -webkit-background-clip: text;
@@ -173,10 +173,12 @@ st.markdown("""
         border-color: #3E404D;
         border-radius: 6px;
         color: #FAFAFA;
+        cursor: pointer;
     }
     
     div[data-baseweb="select"] > div:hover {
         border-color: #EB0A1E;
+        cursor: pointer;
     }
     
     div[data-baseweb="popover"] {
@@ -192,11 +194,13 @@ st.markdown("""
     
     li[data-baseweb="menu-item"] {
         color: #A0A0A0;
+        cursor: pointer;
     }
     
     li[data-baseweb="menu-item"]:hover, li[aria-selected="true"] {
         background-color: rgba(235, 10, 30, 0.1);
         color: #FAFAFA;
+        cursor: pointer;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -233,10 +237,10 @@ def main():
     # Header
     col_header_1, col_header_2 = st.columns([3, 1])
     with col_header_1:
-        st.markdown('<p class="big-font">🏁 Real-Time Race Strategy Optimizer</p>', unsafe_allow_html=True)
+        st.markdown('<p class="big-font">Toyota Gazoo TrackSense</p>', unsafe_allow_html=True)
         st.markdown("**Toyota GR Cup Series - Data-Driven Strategy Tool**")
     with col_header_2:
-        st.image("https://www.toyota.com/gr/assets/img/gr-logo.png", width=100) # Placeholder or local asset if available
+        st.image("Toyota_Gazoo_Racing_emblem.svg", width=100)
     
     st.divider()
     
@@ -253,14 +257,16 @@ def main():
             st.subheader("Event Details")
             track = st.selectbox(
                 "Select Track",
-                options=['barber', 'cota'],
-                format_func=lambda x: TRACKS[x]['name']
+                options=['barber', 'cota', 'indianapolis', 'sebring'],
+                format_func=lambda x: TRACKS[x]['name'],
+                key='track_selector'
             )
             
             race_number = st.selectbox(
                 "Select Race",
                 options=[1, 2],
-                format_func=lambda x: f"Race {x}"
+                format_func=lambda x: f"Race {x}",
+                key='race_selector'
             )
         
         st.divider()
@@ -269,14 +275,16 @@ def main():
         available_drivers = loader.get_available_drivers(track, race_number)
         
         if not available_drivers:
-            st.error("No driver data available for selected race")
+            st.error(f"No driver data available for {TRACKS[track]['name']} Race {race_number}")
+            st.info("This track/race combination may not have data files in the correct location. Please check the dataset folder.")
             return
         
         st.subheader("Driver Selection")
         selected_driver = st.selectbox(
             "Select Driver",
             options=available_drivers,
-            format_func=lambda x: f"Car #{x}"
+            format_func=lambda x: f"Car #{x}",
+            key=f'driver_selector_{track}_{race_number}'
         )
     
     # Load and process data

@@ -50,7 +50,16 @@ def main():
         print("\n")
         print(trainer.generate_training_report())
         
+        # Extract tracks from races_used
+        races_used = results.get('races_used', [])
+        tracks_trained = set()
+        for race in races_used:
+            track_name = race.split('_')[0]
+            tracks_trained.add(track_name.title())
+        
         print("\n✓ Training complete! Models saved to:", models_path)
+        print(f"\n📍 Tracks trained: {', '.join(sorted(tracks_trained))}")
+        print(f"🏁 Total races: {len(races_used)}")
         print("\nYou can now run the dashboard with: streamlit run app.py")
         
         return 0

@@ -106,7 +106,7 @@ class RaceStrategyPDFReport:
         
         # Title
         self.story.append(Spacer(1, 2*inch))
-        title = Paragraph("🏁 Race Strategy Analysis Report", self.styles['CustomTitle'])
+        title = Paragraph("Toyota TrackSense Report", self.styles['CustomTitle'])
         self.story.append(title)
         self.story.append(Spacer(1, 0.5*inch))
         
@@ -121,8 +121,10 @@ class RaceStrategyPDFReport:
         self.story.append(Paragraph(f"<b>Driver:</b> Car #{driver}", info_style))
         self.story.append(Spacer(1, 0.5*inch))
         
-        # Subtitle
-        subtitle = Paragraph("Toyota GR Cup Series", self.styles['CustomSubtitle'])
+        # Subtitle (centered)
+        subtitle_style = ParagraphStyle('SubtitleCentered', parent=self.styles['CustomSubtitle'],
+                                       alignment=TA_CENTER)
+        subtitle = Paragraph("Toyota GR Cup Series", subtitle_style)
         self.story.append(subtitle)
         self.story.append(Spacer(1, 1*inch))
         
@@ -152,9 +154,9 @@ class RaceStrategyPDFReport:
             ['Best Lap Time', f"{summary_data.get('best_lap', 0):.3f}s", '✓'],
             ['Average Lap Time', f"{summary_data.get('avg_lap', 0):.3f}s", '✓'],
             ['Consistency Score', f"{summary_data.get('consistency', 0):.1f}/100", 
-             '✓' if summary_data.get('consistency', 0) > 80 else '⚠'],
+             '✓' if summary_data.get('consistency', 0) > 80 else 'x'],
             ['Final Tire Life', f"{summary_data.get('final_tire_life', 0)*100:.1f}%",
-             '✓' if summary_data.get('final_tire_life', 0) > 0.65 else '⚠'],
+             '✓' if summary_data.get('final_tire_life', 0) > 0.65 else 'x'],
         ]
         
         table = Table(data, colWidths=[2.5*inch, 2*inch, 1*inch])

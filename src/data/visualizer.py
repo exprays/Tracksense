@@ -26,17 +26,17 @@ class RaceVisualizer:
         """Apply consistent dark theme to all plots"""
         fig.update_layout(
             template=self.template,
-            title=dict(text=title, font=dict(size=18, color="#FAFAFA")),
+            title=dict(text=title, font=dict(size=12, color="#FAFAFA")),
             xaxis_title=xaxis_title,
             yaxis_title=yaxis_title,
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(family="Helvetica Neue, sans-serif", color="#FAFAFA"),
+            font=dict(family="Helvetica Neue, sans-serif", color="#FAFAFA", size=11),
             hovermode='x unified',
             hoverlabel=dict(
                 bgcolor="#1E1E1E",
                 bordercolor="#3E404D",
-                font_size=12,
+                font_size=11,
                 font_family="Helvetica Neue, sans-serif"
             ),
             height=DASHBOARD['chart_height'],
@@ -584,7 +584,9 @@ class RaceVisualizer:
             specs=[
                 [{"type": "indicator"}, {"type": "indicator"}, {"type": "indicator"}],
                 [{"type": "indicator"}, {"type": "indicator"}, {"type": "indicator"}]
-            ]
+            ],
+            vertical_spacing=0.15,
+            horizontal_spacing=0.1
         )
         
         # Tire life
@@ -592,14 +594,15 @@ class RaceVisualizer:
         fig.add_trace(go.Indicator(
             mode="gauge+number",
             value=tire_life,
-            title={'text': "Tire Life", 'font': {'color': '#FAFAFA'}},
-            number={'font': {'color': '#FAFAFA'}},
+            title={'text': "Tire Life", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            number={'font': {'size': 20, 'color': '#FAFAFA'}, 'suffix': "%"},
             gauge={
-                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA'},
+                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA', 'tickfont': {'size': 10}},
                 'bar': {'color': "#00FF00" if tire_life > 75 else "#FFA500" if tire_life > 65 else "#FF0000"},
                 'bgcolor': "rgba(0,0,0,0)",
                 'bordercolor': "#333"
-            }
+            },
+            domain={'row': 0, 'column': 0}
         ), row=1, col=1)
         
         # Degradation rate
@@ -607,17 +610,19 @@ class RaceVisualizer:
         fig.add_trace(go.Indicator(
             mode="number+delta",
             value=deg_rate,
-            number={'suffix': "s/lap", 'valueformat': ".3f", 'font': {'color': '#FAFAFA'}},
-            title={'text': "Tire Degradation", 'font': {'color': '#FAFAFA'}},
-            delta={'reference': 0, 'increasing': {'color': "#FF0000"}, 'decreasing': {'color': "#00FF00"}},
+            number={'suffix': "s/lap", 'valueformat': ".3f", 'font': {'size': 20, 'color': '#FAFAFA'}},
+            title={'text': "Tire Degradation", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            delta={'reference': 0, 'increasing': {'color': "#FF0000"}, 'decreasing': {'color': "#00FF00"}, 'font': {'size': 14}},
+            domain={'row': 0, 'column': 1}
         ), row=1, col=2)
         
         # Fuel remaining
         fig.add_trace(go.Indicator(
             mode="number",
             value=state.get('laps_of_fuel', 0),
-            number={'suffix': " laps", 'valueformat': ".1f", 'font': {'color': '#FAFAFA'}},
-            title={'text': "Fuel Remaining", 'font': {'color': '#FAFAFA'}},
+            number={'suffix': " laps", 'valueformat': ".1f", 'font': {'size': 20, 'color': '#FAFAFA'}},
+            title={'text': "Fuel Remaining", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            domain={'row': 0, 'column': 2}
         ), row=1, col=3)
         
         # Pit recommendation score
@@ -625,14 +630,15 @@ class RaceVisualizer:
         fig.add_trace(go.Indicator(
             mode="gauge+number",
             value=pit_score,
-            title={'text': "Pit Now Score", 'font': {'color': '#FAFAFA'}},
-            number={'font': {'color': '#FAFAFA'}},
+            title={'text': "Pit Now Score", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            number={'font': {'size': 20, 'color': '#FAFAFA'}},
             gauge={
-                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA'},
+                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA', 'tickfont': {'size': 10}},
                 'bar': {'color': "#FF0000" if pit_score > 70 else "#FFA500" if pit_score > 40 else "#00FF00"},
                 'bgcolor': "rgba(0,0,0,0)",
                 'bordercolor': "#333"
-            }
+            },
+            domain={'row': 1, 'column': 0}
         ), row=2, col=1)
         
         # Consistency
@@ -640,14 +646,15 @@ class RaceVisualizer:
         fig.add_trace(go.Indicator(
             mode="gauge+number",
             value=consistency,
-            title={'text': "Consistency", 'font': {'color': '#FAFAFA'}},
-            number={'font': {'color': '#FAFAFA'}},
+            title={'text': "Consistency", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            number={'font': {'size': 20, 'color': '#FAFAFA'}},
             gauge={
-                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA'},
+                'axis': {'range': [0, 100], 'tickcolor': '#FAFAFA', 'tickfont': {'size': 10}},
                 'bar': {'color': "#00FF00" if consistency > 80 else "#FFA500" if consistency > 60 else "#FF0000"},
                 'bgcolor': "rgba(0,0,0,0)",
                 'bordercolor': "#333"
-            }
+            },
+            domain={'row': 1, 'column': 1}
         ), row=2, col=2)
         
         # Laps in stint
@@ -655,8 +662,9 @@ class RaceVisualizer:
         fig.add_trace(go.Indicator(
             mode="number",
             value=laps_in_stint,
-            number={'suffix': " laps", 'font': {'color': '#FAFAFA'}},
-            title={'text': "Current Stint", 'font': {'color': '#FAFAFA'}},
+            number={'suffix': " laps", 'font': {'size': 20, 'color': '#FAFAFA'}},
+            title={'text': "Current Stint", 'font': {'size': 12, 'color': '#FAFAFA'}},
+            domain={'row': 1, 'column': 2}
         ), row=2, col=3)
         
         self._apply_theme(fig)

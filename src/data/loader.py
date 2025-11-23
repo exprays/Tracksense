@@ -25,7 +25,7 @@ class RaceDataLoader:
             base_path: Base directory containing race datasets
         """
         self.base_path = Path(base_path)
-        self.tracks = ['barber', 'cota']
+        self.tracks = ['barber', 'cota', 'indianapolis', 'sebring']
         self.data_cache = {}
     
     def load_lap_times(self, track: str, race: int) -> pd.DataFrame:
@@ -46,8 +46,14 @@ class RaceDataLoader:
         try:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'R{race}_barber_lap_time.csv'
-            else:
+            elif track == 'cota':
                 file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'R{race}_cota_lap_Time.csv'
+            elif track == 'indianapolis':
+                file_path = self.base_path / 'indianapolis' / 'indianapolis' / f'R{race}_indianapolis_motor_speedway_lap_time.csv'
+            elif track == 'sebring':
+                file_path = self.base_path / 'sebring' / 'sebring' / 'Sebring' / f'Race {race}' / f'sebring_lap_time_R{race}.csv'
+            else:
+                return pd.DataFrame()
             
             df = pd.read_csv(file_path)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -79,12 +85,18 @@ class RaceDataLoader:
         try:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'23_AnalysisEnduranceWithSections_Race {race}_Anonymized.CSV'
-            else:
+            elif track == 'cota':
                 # COTA has inconsistent naming: Race 1 has no space, Race 2 has space before "Race"
                 if race == 1:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_Race {race}_Anonymized.CSV'
                 else:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_ Race {race}_Anonymized.CSV'
+            elif track == 'indianapolis':
+                file_path = self.base_path / 'indianapolis' / 'indianapolis' / f'23_AnalysisEnduranceWithSections_Race {race}.CSV'
+            elif track == 'sebring':
+                file_path = self.base_path / 'sebring' / 'sebring' / 'Sebring' / f'Race {race}' / f'23_AnalysisEnduranceWithSections_Race {race}_Anonymized.CSV'
+            else:
+                return pd.DataFrame()
             
             df = pd.read_csv(file_path, sep=';')
             
@@ -126,12 +138,18 @@ class RaceDataLoader:
         try:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'26_Weather_Race {race}_Anonymized.CSV'
-            else:
+            elif track == 'cota':
                 # COTA has inconsistent naming
                 if race == 1:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'26_Weather_Race {race}_Anonymized.CSV'
                 else:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'26_Weather_ Race {race}_Anonymized.CSV'
+            elif track == 'indianapolis':
+                file_path = self.base_path / 'indianapolis' / 'indianapolis' / f'26_Weather_Race {race}.CSV'
+            elif track == 'sebring':
+                file_path = self.base_path / 'sebring' / 'sebring' / 'Sebring' / f'Race {race}' / f'26_Weather_Race {race}_Anonymized.CSV'
+            else:
+                return pd.DataFrame()
             
             df = pd.read_csv(file_path, sep=';')
             df.columns = df.columns.str.strip()
@@ -169,12 +187,18 @@ class RaceDataLoader:
         try:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
-            else:
+            elif track == 'cota':
                 # COTA has inconsistent naming
                 if race == 1:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
                 else:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'03_Provisional Results_ Race {race}_Anonymized.CSV'
+            elif track == 'indianapolis':
+                file_path = self.base_path / 'indianapolis' / 'indianapolis' / f'03_Provisional Results_Race {race}.CSV'
+            elif track == 'sebring':
+                file_path = self.base_path / 'sebring' / 'sebring' / 'Sebring' / f'Race {race}' / f'03_Provisional Results_Race {race}_Anonymized.CSV'
+            else:
+                return pd.DataFrame()
             
             df = pd.read_csv(file_path, sep=';')
             df.columns = df.columns.str.strip()
@@ -209,12 +233,18 @@ class RaceDataLoader:
         try:
             if track == 'barber':
                 file_path = self.base_path / 'barber-motorsports-park' / 'barber' / f'99_Best 10 Laps By Driver_Race {race}_Anonymized.CSV'
-            else:
+            elif track == 'cota':
                 # COTA has inconsistent naming
                 if race == 1:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'99_Best 10 Laps By Driver_Race {race}_Anonymized.CSV'
                 else:
                     file_path = self.base_path / 'circuit-of-the-americas' / 'COTA' / f'Race {race}' / f'99_Best 10 Laps By Driver_ Race {race}_Anonymized.CSV'
+            elif track == 'indianapolis':
+                file_path = self.base_path / 'indianapolis' / 'indianapolis' / f'99_Best 10 Laps By Driver_Race {race}.CSV'
+            elif track == 'sebring':
+                file_path = self.base_path / 'sebring' / 'sebring' / 'Sebring' / f'Race {race}' / f'99_Best 10 Laps By Driver_Race {race}_Anonymized.CSV'
+            else:
+                return pd.DataFrame()
             
             df = pd.read_csv(file_path, sep=';')
             df.columns = df.columns.str.strip()

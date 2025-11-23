@@ -74,7 +74,7 @@ class ModelTrainer:
         """
         all_data = []
         
-        for track in ['barber', 'cota']:
+        for track in ['barber', 'cota', 'indianapolis', 'sebring']:
             for race_num in [1, 2]:
                 try:
                     logger.info(f"Loading {track} Race {race_num}...")
