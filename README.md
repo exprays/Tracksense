@@ -55,6 +55,27 @@ Data includes:
 
 ## 🚀 Quick Start
 
+### Download Dataset
+
+1. Download the race data files from: https://trddev.com/hackathon-2025/
+2. Extract the downloaded files
+3. Create a `dataset` folder in the root directory of the project
+4. Move the extracted track folders into the `dataset` directory
+
+Your structure should look like:
+
+```
+toyota/
+├── dataset/
+│   ├── barber-motorsports-park/
+│   ├── circuit-of-the-americas/
+│   ├── indianapolis/
+│   └── sebring/
+├── app.py
+├── requirements.txt
+...
+```
+
 ### Installation
 
 ```bash
